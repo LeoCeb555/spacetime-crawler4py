@@ -76,7 +76,7 @@ def extract_next_links(url, resp):
 
     #####****** LEO - 
     # on your IDE run the crawler to get the analytics file since
-    # I'm running my own rn
+    # I'm running my own rn and its going to keep getting modified every second
     # We'll work on writing that report function and we can use this since
     # it essentially gives us the length of the page
 
