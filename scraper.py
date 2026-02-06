@@ -1,5 +1,6 @@
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
+from bs4 import BeautifulSoup as bs
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -15,7 +16,30 @@ def extract_next_links(url, resp):
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-    return list()
+    harvested_links = []
+
+    # if the status code is some other number than 200
+    # or the program was unable to find the page, return an empty list 
+    # This indicates there was some kind of error
+    if resp.status != 200 or not resp.raw_response: 
+        return []
+
+    # Convert the content of the page to a beautiful soup object
+    soup = bs(resp.raw_response.content, "lxml")
+    
+    # Find anchor tags and gets href for hyperlink
+    for link in soup.find_all('a'):
+        href = link.get('href')
+        
+        #Defragmentation
+        if href:
+            clean_href = href.split('#')[0]
+
+            # Joins the relative links to the full url and appends to the list of links
+            full_url = urljoin(url, clean_href)
+            harvested_links.append(full_url)
+
+    return harvested_links
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 
@@ -25,6 +49,18 @@ def is_valid(url):
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
+
+        allowed_domains = [".ics.uci.edu", 
+        ".cs.uci.edu", 
+        ".informatics.uci.edu", 
+        ".stat.uci.edu"]
+
+        # Returns false for 'is_valid' if the netlocation (url) attempting
+        # to be crawled is not in the list of allowed domains
+        # This will keep the crawler from going outside of the uci specified domains
+        if not any(parsed.netloc.endswith(d) for d in allowed_domains):
+            return False
+
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
