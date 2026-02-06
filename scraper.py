@@ -2,6 +2,48 @@ import re
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup as bs
 
+# Set of filler words to be skipped during tokenizing
+STOP_WORDS = set([
+    "a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "aren't", "as", "at",
+    "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could",
+    "couldn't", "did", "didn't", "do", "does", "doesn't", "doing", "don't", "down", "during", "each", "few", "for",
+    "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's",
+    "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm",
+    "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't",
+    "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours",
+    "ourselves", "out", "over", "own", "same", "shan't", "she", "she'd", "she'll", "she's", "should", "shouldn't",
+    "so", "some", "such", "than", "that", "that's", "the", "their", "theirs", "them", "themselves", "then", "there",
+    "there's", "these", "they", "they'd", "they'll", "they're", "they've", "this", "those", "through", "to", "too",
+    "under", "until", "up", "very", "was", "wasn't", "we", "we'd", "we'll", "we're", "we've", "were", "weren't",
+    "what", "what's", "when", "when's", "where", "where's", "which", "while", "who", "who's", "whom", "why", "why's",
+    "with", "won't", "would", "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself",
+    "yourselves"
+])
+
+# Using tokenizer logic from assignment 1
+def tokenize(text):
+    tokens = [] # A list to store the tokens
+    current_token = ""   # Buffer to hold the characters of the current token
+
+    for char in text:
+        if char.isalnum():
+            current_token += char.lower()   #Sets alphanumeric characters to lowercase
+        else:      # Else triggers when the carriage hits a separator such as a space comma or newline
+            if len(current_token) > 0:       # Checks if a valid word was actually constructed
+
+                #Filter out stop words
+                if current_token not in STOP_WORDS:  
+                    tokens.append(current_token)  # Push back current token to the list of tokens
+                current_token = ""           # Reset current token 
+    
+    # Check for the last token
+    if len(current_token) > 0:
+        if current_token not in STOP_WORDS:
+            tokens.append(current_token)
+
+    return tokens
+
+
 def scraper(url, resp):
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
@@ -27,6 +69,26 @@ def extract_next_links(url, resp):
     # Convert the content of the page to a beautiful soup object
     soup = bs(resp.raw_response.content, "lxml")
     
+    # Get page content for token reading
+    page_text = soup.get_text() 
+
+    tokens = tokenize(page_text) # Call tokenizer
+
+    #####****** LEO - 
+    # on your IDE run the crawler to get the analytics file since
+    # I'm running my own rn
+    # We'll work on writing that report function and we can use this since
+    # it essentially gives us the length of the page
+
+    #Refer to report.py 
+
+    # Write to a new filefor analytics data
+    # Displays the url, number of tokens, and the tokens themselves
+    # This way we can find the url with the highest number of tokens which will give us the longest page for the report.
+    # Basically it saves the stats of the page
+    with open("analytics_data.txt", "a", encoding="utf-8") as f:
+        f.write(f"{url}|{len(tokens)}|{' '.join(tokens)}\n")
+
     # Find anchor tags and gets href for hyperlink
     for link in soup.find_all('a'):
         href = link.get('href')
@@ -50,6 +112,7 @@ def is_valid(url):
         if parsed.scheme not in set(["http", "https"]):
             return False
 
+        # Added the 4 URLs allowed for crawling by the assignment
         allowed_domains = [".ics.uci.edu", 
         ".cs.uci.edu", 
         ".informatics.uci.edu", 
