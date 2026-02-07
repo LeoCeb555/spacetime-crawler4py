@@ -124,6 +124,12 @@ def is_valid(url):
         if not any(parsed.netloc.endswith(d) for d in allowed_domains):
             return False
 
+        # Trap protection for wiki and calendar
+        if "wiki.ics.uci.edu" in parsed.netloc and parsed.query:
+            return False
+        if "calendar" in parsed.hostname:
+            return False
+        
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
