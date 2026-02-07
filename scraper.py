@@ -130,6 +130,18 @@ def is_valid(url):
         if "calendar" in parsed.hostname:
             return False
         
+        
+        # Additional trap protection
+
+        # Block calendar/events infinite trap
+        if "events" in parsed.path.lower() or "calendar" in parsed.path.lower():
+            return False
+
+        #Block dynamic calendar exports, ex: https://isg.ics.uci.edu/events/tag/talks/day/2024-10-12/?outlook-ical=1|0|
+        if "ical" in parsed.query.lower():
+            return False
+
+
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
