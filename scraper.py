@@ -3,6 +3,9 @@ from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup as bs
 from stopWords import STOP_WORDS
 
+longestURL = ""
+longestLength = 0
+
 # Using tokenizer logic from assignment 1
 def tokenize(text):
     tokens = [] # A list to store the tokens
@@ -32,6 +35,9 @@ def scraper(url, resp):
     return [link for link in links if is_valid(link)]
 
 def extract_next_links(url, resp):
+    #Lets funciton know these are global variables
+    global longestURL
+    global longestLength
     # Implementation required.
     # url: the URL that was used to get the page
     # resp.url: the actual url of the page
@@ -40,7 +46,7 @@ def extract_next_links(url, resp):
     # resp.raw_response: this is where the page actually is. More specifically, the raw_response has two parts:
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
-    # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
+    # Set tracks unique hyperlinks (as strings) scrapped from resp.raw_response.content
     harvested_links = set()
 
     # if the status code is some other number than 200
@@ -72,6 +78,10 @@ def extract_next_links(url, resp):
     with open("analytics_data.txt", "a", encoding="utf-8") as f:
         f.write(f"{url}|{len(tokens)}|{' '.join(tokens)}\n")
 
+    if len(tokens) > longestLength:
+        longestURL = url
+        longestLength = len(tokens)
+
     # Find anchor tags and gets href for hyperlink
     for link in soup.find_all('a'):
         href = link.get('href')
@@ -80,7 +90,7 @@ def extract_next_links(url, resp):
         if href:
             clean_href = href.split('#')[0]
 
-            # Joins the relative links to the full url and appends to the list of links
+            # Joins the relative links to the full url and add to the set of links
             full_url = urljoin(url, clean_href)
             harvested_links.add(full_url)
 
