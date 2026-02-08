@@ -124,6 +124,7 @@ def is_valid(url):
         if not any(parsed.netloc.endswith(d) for d in allowed_domains):
             return False
 
+
         # Trap protection for wiki (updated) and calendar
         # Block DokuWiki Trap
         #Ex: http://intranet.ics.uci.edu/doku.php/wiki:dokuwiki?tab_details=view&do=media&tab_files=upload&image=wiki%3Alogo.png.bak&ns=
@@ -142,6 +143,15 @@ def is_valid(url):
 
         #Block dynamic calendar exports, ex: https://isg.ics.uci.edu/events/tag/talks/day/2024-10-12/?outlook-ical=1|0|
         if "ical" in parsed.query.lower():
+            return False
+
+        #Block large galleries
+        if "eppstein" in parsed.path.lower() or "/pix/" in parsed.path.lower():
+            return False
+
+        # More trap protection, this time for dynamic gitlab urls
+        #Ex: https://gitlab.ics.uci.edu/joshug4/heros/-/commit/663aa65db524c27f85c3cdbc4e5f7c8dad0a37d8?view=parallel|64|
+        if "gitlab.ics.uci.edu" in parsed.netloc and parsed.query:
             return False
 
         return not re.match(
