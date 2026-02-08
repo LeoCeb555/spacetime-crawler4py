@@ -41,7 +41,7 @@ def extract_next_links(url, resp):
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-    harvested_links = []
+    harvested_links = set()
 
     # if the status code is some other number than 200
     # or the program was unable to find the page, return an empty list 
@@ -82,9 +82,9 @@ def extract_next_links(url, resp):
 
             # Joins the relative links to the full url and appends to the list of links
             full_url = urljoin(url, clean_href)
-            harvested_links.append(full_url)
+            harvested_links.add(full_url)
 
-    return harvested_links
+    return list(harvested_links)
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 
