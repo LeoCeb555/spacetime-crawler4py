@@ -2,9 +2,12 @@ import re
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup as bs
 from stopWords import STOP_WORDS
+from collections import Counter
 
-longestURL = ""
-longestLength = 0
+longestURL = "" #tracks the name of the page with the most words
+longestLength = 0 #tracks the word amount of the longest page
+word_frequencies = Counter() #tracks word frequences
+numOfUniquePages = 0  #tracks numOfUnique pages crawled
 
 # Using tokenizer logic from assignment 1
 def tokenize(text):
@@ -35,9 +38,8 @@ def scraper(url, resp):
     return [link for link in links if is_valid(link)]
 
 def extract_next_links(url, resp):
-    #Lets funciton know these are global variables
-    global longestURL
-    global longestLength
+    #Lets function know these are global variables
+    global longestURL, longestLength, word_frequencies, numOfUniquePages
     # Implementation required.
     # url: the URL that was used to get the page
     # resp.url: the actual url of the page
@@ -62,6 +64,7 @@ def extract_next_links(url, resp):
     page_text = soup.get_text() 
 
     tokens = tokenize(page_text) # Call tokenizer
+    word_frequencies.update(tokens) #Add page's tokens to word counts
 
     #####****** LEO - 
     # on your IDE run the crawler to get the analytics file since
@@ -78,6 +81,7 @@ def extract_next_links(url, resp):
     with open("analytics_data.txt", "a", encoding="utf-8") as f:
         f.write(f"{url}|{len(tokens)}|{' '.join(tokens)}\n")
 
+    #Checks if url has more words than current longest
     if len(tokens) > longestLength:
         longestURL = url
         longestLength = len(tokens)
@@ -93,6 +97,9 @@ def extract_next_links(url, resp):
             # Joins the relative links to the full url and add to the set of links
             full_url = urljoin(url, clean_href)
             harvested_links.add(full_url)
+    
+    #Updates counter of unique pages found
+    numOfUniquePages += len(harvested_links)
 
     return list(harvested_links)
 
