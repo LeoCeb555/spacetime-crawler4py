@@ -1,24 +1,10 @@
 import re
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup as bs
+from stopWords import STOP_WORDS
 
-# Set of filler words to be skipped during tokenizing
-STOP_WORDS = set([
-    "a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "aren't", "as", "at",
-    "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could",
-    "couldn't", "did", "didn't", "do", "does", "doesn't", "doing", "don't", "down", "during", "each", "few", "for",
-    "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's",
-    "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm",
-    "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't",
-    "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours",
-    "ourselves", "out", "over", "own", "same", "shan't", "she", "she'd", "she'll", "she's", "should", "shouldn't",
-    "so", "some", "such", "than", "that", "that's", "the", "their", "theirs", "them", "themselves", "then", "there",
-    "there's", "these", "they", "they'd", "they'll", "they're", "they've", "this", "those", "through", "to", "too",
-    "under", "until", "up", "very", "was", "wasn't", "we", "we'd", "we'll", "we're", "we've", "were", "weren't",
-    "what", "what's", "when", "when's", "where", "where's", "which", "while", "who", "who's", "whom", "why", "why's",
-    "with", "won't", "would", "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself",
-    "yourselves"
-])
+longestURL = ""
+longestLength = 0
 
 # Using tokenizer logic from assignment 1
 def tokenize(text):
@@ -49,6 +35,9 @@ def scraper(url, resp):
     return [link for link in links if is_valid(link)]
 
 def extract_next_links(url, resp):
+    #Lets funciton know these are global variables
+    global longestURL
+    global longestLength
     # Implementation required.
     # url: the URL that was used to get the page
     # resp.url: the actual url of the page
@@ -57,8 +46,8 @@ def extract_next_links(url, resp):
     # resp.raw_response: this is where the page actually is. More specifically, the raw_response has two parts:
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
-    # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-    harvested_links = []
+    # Set tracks unique hyperlinks (as strings) scrapped from resp.raw_response.content
+    harvested_links = set()
 
     # if the status code is some other number than 200
     # or the program was unable to find the page, return an empty list 
@@ -89,6 +78,10 @@ def extract_next_links(url, resp):
     with open("analytics_data.txt", "a", encoding="utf-8") as f:
         f.write(f"{url}|{len(tokens)}|{' '.join(tokens)}\n")
 
+    if len(tokens) > longestLength:
+        longestURL = url
+        longestLength = len(tokens)
+
     # Find anchor tags and gets href for hyperlink
     for link in soup.find_all('a'):
         href = link.get('href')
@@ -97,11 +90,11 @@ def extract_next_links(url, resp):
         if href:
             clean_href = href.split('#')[0]
 
-            # Joins the relative links to the full url and appends to the list of links
+            # Joins the relative links to the full url and add to the set of links
             full_url = urljoin(url, clean_href)
-            harvested_links.append(full_url)
+            harvested_links.add(full_url)
 
-    return harvested_links
+    return list(harvested_links)
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 
