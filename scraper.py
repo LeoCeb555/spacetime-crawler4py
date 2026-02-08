@@ -7,7 +7,8 @@ from collections import Counter
 longestURL = "" #tracks the name of the page with the most words
 longestLength = 0 #tracks the word amount of the longest page
 word_frequencies = Counter() #tracks word frequences
-numOfUniquePages = 0  #tracks numOfUnique pages crawled
+unique_urls = set() #tracks the urls already found, works with subdomain counter
+numOfUniquePagesPerSubDomain = Counter() #tracks number of unique pages per unique subdomain
 
 # Using tokenizer logic from assignment 1
 def tokenize(text):
@@ -39,7 +40,7 @@ def scraper(url, resp):
 
 def extract_next_links(url, resp):
     #Lets function know these are global variables
-    global longestURL, longestLength, word_frequencies, numOfUniquePages
+    global longestURL, longestLength, word_frequencies, unique_urls, numOfUniquePagesPerSubDomain
     # Implementation required.
     # url: the URL that was used to get the page
     # resp.url: the actual url of the page
@@ -48,6 +49,7 @@ def extract_next_links(url, resp):
     # resp.raw_response: this is where the page actually is. More specifically, the raw_response has two parts:
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
+    
     # Set tracks unique hyperlinks (as strings) scrapped from resp.raw_response.content
     harvested_links = set()
 
@@ -59,20 +61,12 @@ def extract_next_links(url, resp):
 
     # Convert the content of the page to a beautiful soup object
     soup = bs(resp.raw_response.content, "lxml")
-    
+
     # Get page content for token reading
     page_text = soup.get_text() 
 
     tokens = tokenize(page_text) # Call tokenizer
     word_frequencies.update(tokens) #Add page's tokens to word counts
-
-    #####****** LEO - 
-    # on your IDE run the crawler to get the analytics file since
-    # I'm running my own rn and its going to keep getting modified every second
-    # We'll work on writing that report function and we can use this since
-    # it essentially gives us the length of the page
-
-    #Refer to report.py 
 
     # Write to a new filefor analytics data
     # Displays the url, number of tokens, and the tokens themselves
@@ -80,6 +74,17 @@ def extract_next_links(url, resp):
     # Basically it saves the stats of the page
     with open("analytics_data.txt", "a", encoding="utf-8") as f:
         f.write(f"{url}|{len(tokens)}|{' '.join(tokens)}\n")
+    
+    #if url has not been found yet, adds it to found urls and updates unique page counter for this url
+    temp = url.split("#")[0].rstrip("/").lower() #ensure defragmentation, remove trailing slash, set to lowercase
+
+    if temp not in unique_urls:
+        unique_urls.add(temp)
+        parsed = urlparse(temp) #seperates url into sections
+        hostname = parsed.hostname  # drops the port if present
+        if hostname and hostname.startswith("www."): #checks for www. and bad urls
+            hostname = hostname[4:]  # drop the first 4 characters
+        numOfUniquePagesPerSubDomain[hostname] += 1 #increment count for subdomain
 
     #Checks if url has more words than current longest
     if len(tokens) > longestLength:
@@ -97,9 +102,6 @@ def extract_next_links(url, resp):
             # Joins the relative links to the full url and add to the set of links
             full_url = urljoin(url, clean_href)
             harvested_links.add(full_url)
-    
-    #Updates counter of unique pages found
-    numOfUniquePages += len(harvested_links)
 
     return list(harvested_links)
 
