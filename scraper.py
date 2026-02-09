@@ -2,9 +2,14 @@ import re
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup as bs
 from stopWords import STOP_WORDS
+from collections import Counter
 
-longestURL = ""
-longestLength = 0
+longestURL = "" #tracks the name of the page with the most words
+longestLength = 0 #tracks the word amount of the longest page
+word_frequencies = Counter() #tracks word frequences
+unique_urls = set() #tracks the urls already found, works with subdomain counter
+numOfUniquePagesPerSubDomain = Counter() #tracks number of unique pages per unique subdomain
+analytics_buffer = [] #analytics_data buffer
 
 # Using tokenizer logic from assignment 1
 def tokenize(text):
@@ -34,10 +39,15 @@ def scraper(url, resp):
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
+#Saves analytics all at once at the end of crawl
+def save_analytics(filename="analytics_data.txt"):
+    with open(filename, "a", encoding="utf-8") as f: #append to analytics data
+        f.write("\n".join(analytics_buffer) + "\n")
+    analytics_buffer.clear() #clear the buffer
+
 def extract_next_links(url, resp):
-    #Lets funciton know these are global variables
-    global longestURL
-    global longestLength
+    #Lets function know these are global variables
+    global longestURL, longestLength, word_frequencies, unique_urls, numOfUniquePagesPerSubDomain, analytics_buffer
     # Implementation required.
     # url: the URL that was used to get the page
     # resp.url: the actual url of the page
@@ -46,6 +56,7 @@ def extract_next_links(url, resp):
     # resp.raw_response: this is where the page actually is. More specifically, the raw_response has two parts:
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
+
     # Set tracks unique hyperlinks (as strings) scrapped from resp.raw_response.content
     harvested_links = set()
 
@@ -57,27 +68,37 @@ def extract_next_links(url, resp):
 
     # Convert the content of the page to a beautiful soup object
     soup = bs(resp.raw_response.content, "lxml")
-    
+
     # Get page content for token reading
     page_text = soup.get_text() 
 
     tokens = tokenize(page_text) # Call tokenizer
-
-    #####****** LEO - 
-    # on your IDE run the crawler to get the analytics file since
-    # I'm running my own rn and its going to keep getting modified every second
-    # We'll work on writing that report function and we can use this since
-    # it essentially gives us the length of the page
-
-    #Refer to report.py 
+    word_frequencies.update(tokens) #Add page's tokens to word counts
 
     # Write to a new filefor analytics data
     # Displays the url, number of tokens, and the tokens themselves
     # This way we can find the url with the highest number of tokens which will give us the longest page for the report.
     # Basically it saves the stats of the page
-    with open("analytics_data.txt", "a", encoding="utf-8") as f:
-        f.write(f"{url}|{len(tokens)}|{' '.join(tokens)}\n")
+    
+    # If buffer reaches 150 pages
+    if len(analytics_buffer) >= 150:
+        save_analytics() #write the data to the file
 
+    # Add to url to analytics buffer
+    analytics_buffer.append(f"{url}|{len(tokens)}|{' '.join(tokens)}")
+    
+    #if url has not been found yet, adds it to found urls and updates unique page counter for this url
+    temp = url.split("#")[0].rstrip("/").lower() #ensure defragmentation, remove trailing slash, set to lowercase
+
+    if temp not in unique_urls:
+        unique_urls.add(temp)
+        parsed = urlparse(temp) #seperates url into sections
+        hostname = parsed.hostname  # drops the port if present
+        if hostname and hostname.startswith("www."): #checks for www. and bad urls
+            hostname = hostname[4:]  # drop the first 4 characters
+        numOfUniquePagesPerSubDomain[hostname] += 1 #increment count for subdomain
+
+    #Checks if url has more words than current longest
     if len(tokens) > longestLength:
         longestURL = url
         longestLength = len(tokens)

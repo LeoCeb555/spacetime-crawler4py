@@ -24,3 +24,6 @@ class Crawler(object):
     def join(self):
         for worker in self.workers:
             worker.join()
+        # Flush remaining analytics data
+        import scraper
+        scraper.save_analytics()
