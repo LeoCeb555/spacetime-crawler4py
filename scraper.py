@@ -173,6 +173,17 @@ def is_valid(url):
         if any(x in parsed.query for x in ["sort=", "filter=", "limit=", "order="]):
             return False
 
+        #Block grape/wiki trap
+        if "grape.ics.uci.edu" in parsed.netloc:
+            # Block timeline (infinite calendar)
+            if "timeline" in parsed.path:
+                return False
+            # Block attachments
+            if "attachment" in parsed.path:
+                return False
+            # Block history/diffs/specific versions
+            if any(x in parsed.query for x in ["action=", "version=", "format="]):
+                return False
 
 
         return not re.match(
