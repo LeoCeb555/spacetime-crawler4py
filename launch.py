@@ -1,10 +1,22 @@
+import atexit
 from configparser import ConfigParser
 from argparse import ArgumentParser
 
 from utils.server_registration import get_cache_server
 from utils.config import Config
 from crawler import Crawler
+import report  
 
+# This function runs automatically on keyboard interrupt
+def print_final_report():
+    print("\n--- CRAWLER STOPPED. GENERATING FINAL REPORT ---")
+    try:
+        report.makeReport()
+    except Exception as e:
+        print(f"Error generating report: {e}")
+
+# Register the function
+atexit.register(print_final_report)
 
 def main(config_file, restart):
     cparser = ConfigParser()

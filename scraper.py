@@ -143,7 +143,8 @@ def is_valid(url):
         # Block DokuWiki Trap
         #Ex: http://intranet.ics.uci.edu/doku.php/wiki:dokuwiki?tab_details=view&do=media&tab_files=upload&image=wiki%3Alogo.png.bak&ns=
         if "doku.php" in parsed.path:
-            if "do=" in parsed.query or "tab_" in parsed.query:
+            # Block actions (do=), revisions (tab_), and sitemaps (idx=)
+            if any(x in parsed.query for x in ["do=", "tab_", "idx="]):
                 return False
         if "calendar" in parsed.hostname:
             return False
@@ -167,6 +168,12 @@ def is_valid(url):
         #Ex: https://gitlab.ics.uci.edu/joshug4/heros/-/commit/663aa65db524c27f85c3cdbc4e5f7c8dad0a37d8?view=parallel|64|
         if "gitlab.ics.uci.edu" in parsed.netloc and parsed.query:
             return False
+        
+        # Blocks pages that are just re-sorting the same content
+        if any(x in parsed.query for x in ["sort=", "filter=", "limit=", "order="]):
+            return False
+
+
 
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"

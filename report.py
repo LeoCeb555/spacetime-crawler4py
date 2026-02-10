@@ -1,6 +1,7 @@
 from scraper import longestLength, longestURL, word_frequencies, unique_urls, numOfUniquePagesPerSubDomain
+from stopWords import STOP_WORDS
 
-def makeReport():
+def makeReport(file_path="analytics_data.txt"):
     #Num of unique pages found
     print("Number of unique pages found: " + str(len(unique_urls)) + "\n")
     #Longest page

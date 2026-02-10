@@ -103,5 +103,5 @@ STOP_WORDS = set([
   "x","y","yes","yet","you","youd","you'll","your","youre","yours","yourself",
   "yourselves","you've",
 
-  "z","zero"
+  "z","zero", "1", "2", "3", "4", "5", "6", "7", "8"
 ])
